@@ -41,17 +41,17 @@ class WalkInstance : InstanceBase {
     num_seed = _num_seed;
     std::random_device rd;
     std::mt19937 gen(56);
-    std::uniform_int_distribution<> dis(1, 10000);  // ggraph.vtx_num);
+    std::uniform_int_distribution<> dis(1, ggraph.vtx_num-1);  // ggraph.vtx_num);
     uint *seeds = new uint[num_seed];
     for (int n = 0; n < num_seed; ++n) {
-#ifdef check
-      // seeds[n] = n;
-      seeds[n] = 1;
-// seeds[n] = 339;
-#else
+// #ifdef check
+//       // seeds[n] = n;
+//       seeds[n] = 1;
+// // seeds[n] = 339;
+// #else
       // seeds[n] = n;
       seeds[n] = dis(gen);
-#endif  // check
+// #endif  // check
     }
     result.init(num_seed, _hop_num, seeds);
   }

@@ -320,20 +320,22 @@ static __global__ void print_result(Sampler_new *sampler) {
 }
 
 float UnbiasedSample(Sampler_new &sampler) {
-  LOG("%s\n", __FUNCTION__);
+              // double before_sample_start = wtime();
+
+  // LOG("%s\n", __FUNCTION__);
   int device;
   cudaDeviceProp prop;
   cudaGetDevice(&device);
   cudaGetDeviceProperties(&prop, device);
   int n_sm = prop.multiProcessorCount;
-  LOG("overridding flags_itr for UnbiasedSample for better performance\n");
+  // LOG("overridding flags_itr for UnbiasedSample for better performance\n");
   FLAGS_peritr = 1;
 
   Sampler_new *sampler_ptr;
   MyCudaMalloc(&sampler_ptr, sizeof(Sampler_new));
   CUDA_RT_CALL(cudaMemcpy(sampler_ptr, &sampler, sizeof(Sampler_new),
                           cudaMemcpyHostToDevice));
-  double start_time, total_time;
+  // double start_time, total_time;
   // init_kernel_ptr<<<1, 32, 0, 0>>>(sampler_ptr, false);
 
   // allocate global buffer
@@ -343,8 +345,11 @@ float UnbiasedSample(Sampler_new &sampler) {
 
   uint size_h, *size_d;
   MyCudaMalloc(&size_d, sizeof(uint));
+
+  // double before_sample_end = wtime();
+  // printf("before sampler time:%.3f\n",(before_sample_end - before_sample_start) * 1000);
 #pragma omp barrier
-  start_time = wtime();
+              double sample_start = wtime();
   if (FLAGS_peritr) {
     if (FLAGS_buffer) {
       sample_kernel_first_buffer<<<sampler.result.size / BLOCK_SIZE + 1,
@@ -356,6 +361,7 @@ float UnbiasedSample(Sampler_new &sampler) {
     } else {
       sample_kernel_first<<<sampler.result.size / BLOCK_SIZE + 1, BLOCK_SIZE, 0,
                             0>>>(sampler_ptr, 0);
+      
       sample_kernel_second<32>
           <<<sampler.result.size * 32 / BLOCK_SIZE + 1, BLOCK_SIZE, 0, 0>>>(
               sampler_ptr, 1);
@@ -371,15 +377,26 @@ float UnbiasedSample(Sampler_new &sampler) {
 
   CUDA_RT_CALL(cudaDeviceSynchronize());
   // CUDA_RT_CALL(cudaPeekAtLastError());
-  total_time = wtime() - start_time;
+              double sample_end = wtime();
+              //   printf("sampler time:%.3f\n",(sample_end - sample_start) * 1000);
 #pragma omp barrier
-  LOG("Device %d sampling time:\t%.6f ratio:\t %.2f MSEPS\n",
-      omp_get_thread_num(), total_time,
-      static_cast<float>(sampler.result.GetSampledNumber() / total_time /
-                         1000000));
+  // LOG("Device %d sampling time:\t%.6f ratio:\t %.2f MSEPS\n",
+  //     omp_get_thread_num(), total_time,
+  //     static_cast<float>(sampler.result.GetSampledNumber() / total_time /
+  //                        1000000));
   sampler.sampled_edges = sampler.result.GetSampledNumber();
-  LOG("sampled_edges %d\n", sampler.sampled_edges);
+  MYLOG("sampled_edges %d\n", sampler.sampled_edges);
   if (FLAGS_printresult) print_result<<<1, 32, 0, 0>>>(sampler_ptr);
+   if (sampler_ptr != nullptr) {
+    CUDA_RT_CALL(cudaFree(sampler_ptr));
+    // printf("freed sampler!\n");
+   }
+  if (size_d != nullptr) {
+    CUDA_RT_CALL(cudaFree(size_d));
+    // printf("freed sized_d!\n");
+   }
   CUDA_RT_CALL(cudaDeviceSynchronize());
-  return total_time;
+                // double after_sample_end = wtime();
+                // printf("after sampler time:%.3f\n",(after_sample_end - sample_end ) * 1000);
+  return (float)(sample_end-sample_start);
 }

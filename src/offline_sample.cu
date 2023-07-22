@@ -398,7 +398,7 @@ static __global__ void sample_kernel_second_buffer(Sampler_new *sampler,
         prob.Init(src_degree);
 
 #ifdef UNIQUE_SAMPLE
-        duplicate_checker<uint, 10> checker;
+        //duplicate_checker<uint, 10> checker;
 #endif
         for (size_t i = 0; i < sample_size; i++) {
           int col = (int)floor(curand_uniform(&state) * src_degree);
@@ -441,7 +441,7 @@ static __global__ void print_result(Sampler_new *sampler) {
 }
 
 float OfflineSample(Sampler_new &sampler) {
-  LOG("%s\n", __FUNCTION__);
+  // LOG("%s\n", __FUNCTION__);
   // printf("matrixBuffer<BLOCK_SIZE, 10, uint> %u \n",
   //        sizeof(matrixBuffer<BLOCK_SIZE, 10, uint>));
 
@@ -465,14 +465,14 @@ float OfflineSample(Sampler_new &sampler) {
   CUDA_RT_CALL(cudaPeekAtLastError());
   start_time = wtime();
   if (!FLAGS_peritr) {
-#ifdef LOCALITY
+#ifdef MYLOCALITY
     sample_kernel_loc<<<block_num, BLOCK_SIZE, 0, 0>>>(sampler_ptr);
 #else
     sample_kernel<<<block_num, BLOCK_SIZE, 0, 0>>>(sampler_ptr);
 #endif
   } else {
     if (FLAGS_buffer) {
-      LOG(" buffered sampling has problems\n");
+      // LOG(" buffered sampling has problems\n");
       sample_kernel_first_buffered<<<sampler.result.size / BLOCK_SIZE + 1,
                                      BLOCK_SIZE, 0, 0>>>(sampler_ptr, 0);
       if (sampler.result.hops_h[1] <= 16)
@@ -502,11 +502,11 @@ float OfflineSample(Sampler_new &sampler) {
   total_time = wtime() - start_time;
 #pragma omp barrier
   sampler.sampled_edges = sampler.result.GetSampledNumber(!FLAGS_peritr);
-  LOG("Device %d sampling time:\t%.2f ms ratio:\t %.1f MSEPS\n",
-      omp_get_thread_num(), total_time * 1000,
-      static_cast<float>(sampler.sampled_edges / total_time / 1000000));
+  // LOG("Device %d sampling time:\t%.2f ms ratio:\t %.1f MSEPS\n",
+  //     omp_get_thread_num(), total_time * 1000,
+  //     static_cast<float>(sampler.sampled_edges / total_time / 1000000));
 
-  LOG("sampled_edges %d\n", sampler.sampled_edges);
+  // LOG("sampled_edges %d\n", sampler.sampled_edges);
   if (FLAGS_printresult) print_result<<<1, 32, 0, 0>>>(sampler_ptr);
   CUDA_RT_CALL(cudaDeviceSynchronize());
   return total_time;

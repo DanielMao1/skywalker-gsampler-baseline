@@ -43,6 +43,7 @@ struct Vector_shmem;
 template <typename T, uint _size>
 struct Vector_shmem<T, thread_block_tile<32>, _size, false> {
   uint size;
+  unsigned int size1;
   uint capacity;
   buf<T, _size> data;
 
@@ -67,11 +68,11 @@ struct Vector_shmem<T, thread_block_tile<32>, _size, false> {
   __device__ void Add(T t) {
     assert(Size() < _size);
     {
-      uint old = atomicAdd(&size, 1);
+      uint old = atomicAdd(&size1, 1);
       if (old < capacity)
         data.data[old] = t;
       else
-        atomicDec(&size, 1);
+        atomicDec(&size1, 1);
     }
   }
   __device__ T &operator[](size_t id) { return data.data[id]; }
@@ -105,11 +106,12 @@ struct Vector_shmem<T, thread_block_tile<SUBWARP_SIZE>, _size, false> {
   __device__ void Add(T t) {
     assert(Size() < _size);
     {
-      uint old = atomicAdd(&size, 1);
+      unsigned int size1=0;
+      uint old = atomicAdd(&size1, 1);
       if (old < capacity)
         data.data[old] = t;
       else
-        atomicDec(&size, 1);
+        atomicDec(&size1, 1);
     }
   }
   __device__ T &operator[](size_t id) { return data.data[id]; }
@@ -327,7 +329,7 @@ class Vector_gmem {
       // paster(  _capacity * sizeof(T));
       CUDA_RT_CALL(MyCudaMalloc(&data, _capacity * sizeof(T)));
     } else {
-      // LOG("FLAGS_device not solved for vec\n");
+      // MYLOG("FLAGS_device not solved for vec\n");
       CUDA_RT_CALL(MyCudaMallocManaged(&data, _capacity * sizeof(T)));
       CUDA_RT_CALL(cudaMemAdvise(data, _capacity * sizeof(T),
                                  cudaMemAdviseSetAccessedBy, gpuid));

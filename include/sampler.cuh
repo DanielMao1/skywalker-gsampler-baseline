@@ -80,7 +80,7 @@ class Sampler {
     valid = nullptr;
   }
   void CopyFromGlobalAliasTable(AliasTable &table, Sampler *samplers) {
-    LOG("CopyFromGlobalAliasTable\n");
+    MYLOG("CopyFromGlobalAliasTable\n");
     // if (prob_array != nullptr) CUDA_RT_CALL(cudaFree(prob_array));
     // if (alias_array != nullptr) CUDA_RT_CALL(cudaFree(alias_array));
     // if (valid != nullptr) CUDA_RT_CALL(cudaFree(valid));
@@ -145,7 +145,7 @@ class Sampler {
   void AllocateAliasTablePartial(uint ngpu = 1, uint index = 0) {
     int dev_id = omp_get_thread_num();
     CUDA_RT_CALL(cudaSetDevice(dev_id));
-    // LOG("umtable %d %d\n", device_id, omp_get_thread_num());
+    // MYLOG("umtable %d %d\n", device_id, omp_get_thread_num());
     uint local_vtx_num, local_vtx_offset, local_edge_offset, local_edge_size;
 
     if (FLAGS_edgecut) {
@@ -171,7 +171,7 @@ class Sampler {
     // paster(local_edge_offset);
     // paster(local_edge_size);
     if (!FLAGS_umtable && !FLAGS_hmtable) {
-      // LOG("GM table\n");
+      // MYLOG("GM table\n");
       CUDA_RT_CALL(
           MyCudaMalloc((void **)&prob_array, local_edge_size * sizeof(float)));
       CUDA_RT_CALL(
@@ -179,7 +179,7 @@ class Sampler {
       CUDA_RT_CALL(MyCudaMalloc((void **)&valid, local_vtx_num * sizeof(char)));
     }
     if (FLAGS_umtable) {
-      // LOG("UM table\n");
+      // MYLOG("UM table\n");
       CUDA_RT_CALL(MyCudaMallocManaged((void **)&prob_array,
                                        local_edge_size * sizeof(float)));
       CUDA_RT_CALL(MyCudaMallocManaged((void **)&alias_array,
@@ -195,7 +195,7 @@ class Sampler {
                                  cudaMemAdviseSetAccessedBy, device_id));
     }
     if (FLAGS_hmtable) {
-      LOG("AllocateAliasTablePartial host mapped table\n");
+      MYLOG("AllocateAliasTablePartial host mapped table\n");
       CUDA_RT_CALL(cudaHostAlloc((void **)&prob_array,
                                  local_edge_size * sizeof(float),
                                  cudaHostAllocWriteCombined));
@@ -219,12 +219,12 @@ class Sampler {
     CUDA_RT_CALL(cudaDeviceSynchronize());
   }
   void AllocateSharedAliasTable(Sampler *samplers) {
-    LOG("AllocateSharedAliasTable\n");
+    MYLOG("AllocateSharedAliasTable\n");
     int dev_id = omp_get_thread_num();
     CUDA_RT_CALL(cudaSetDevice(dev_id));
 
     if (FLAGS_hmtable) {
-      LOG("host mapped table\n");
+      MYLOG("host mapped table\n");
       CUDA_RT_CALL(cudaHostAlloc((void **)&prob_array,
                                  ggraph.edge_num * sizeof(float),
                                  cudaHostAllocWriteCombined));
@@ -243,7 +243,7 @@ class Sampler {
     }
   }
   void AllocateAliasTable() {
-    // LOG("umtable %d %d\n", device_id, omp_get_thread_num());
+    // MYLOG("umtable %d %d\n", device_id, omp_get_thread_num());
     int dev_id = omp_get_thread_num();
     CUDA_RT_CALL(cudaSetDevice(dev_id));
 
@@ -278,7 +278,7 @@ class Sampler {
                                  nullptr));
     }
     if (FLAGS_hmtable) {
-      LOG("host mapped table\n");
+      MYLOG("host mapped table\n");
       CUDA_RT_CALL(cudaHostAlloc((void **)&prob_array,
                                  ggraph.edge_num * sizeof(float),
                                  cudaHostAllocWriteCombined));
@@ -301,22 +301,24 @@ class Sampler {
     num_seed = _num_seed;
     std::random_device rd;
     std::mt19937 gen(56);
-    std::uniform_int_distribution<> dis(1, 10000);  // ggraph.vtx_num);
+    std::uniform_int_distribution<> dis(1, ggraph.vtx_num);  // ggraph.vtx_num);
     uint *seeds = new uint[num_seed];
     // for (int n = num_seed / dev_num * dev_id;
     //      n < num_seed / dev_num * (dev_id + 1); ++n)
     if (!FLAGS_replica) {
       for (int n = 0; n < num_seed; ++n) {
-#ifdef check
-        // seeds[n] = n;
-#else
-        seeds[n] = dev_id + n * dev_num;
-// seeds[n] = dis(gen);
-#endif  // check
+// #ifdef check
+//         // seeds[n] = n;
+// #else
+        // seeds[n] = dev_id + n * dev_num;
+        // printf("seeds:%d\n",seeds[n]);
+     seeds[n] = dis(gen);
+// #endif  // check
       }
     } else {
+      
       for (int n = 0; n < num_seed; ++n) {
-        seeds[n] = n;
+     seeds[n] = dis(gen);
       }
     }
     result.init(num_seed, _hop_num, _hops, seeds, device_id);
@@ -392,36 +394,67 @@ class Sampler_new {
     sampled_edges = old.sampled_edges;
     result.init(num_seed, old.result.hop_num, old.result.hops_h,
                 old.result.seeds, device_id, old.ggraph.vtx_num);
-    // ggraph=old.ggraph;
-    // ggraph=old.ggraph;
-    // ggraph=old.ggraph;
-    // ggraph=old.ggraph;
-    // ggraph=old.ggraph;
   }
   ~Sampler_new() {}
   __host__ void Free(bool UsingGlobal = false) {
     result.Free();
-    if (!UsingGlobal) {
-      if (!FLAGS_hmtable) {
-        if (prob_array != nullptr) CUDA_RT_CALL(cudaFree(prob_array));
-        if (alias_array != nullptr) CUDA_RT_CALL(cudaFree(alias_array));
-        if (valid != nullptr) CUDA_RT_CALL(cudaFree(valid));
-      } else {
-        if (prob_array != nullptr) CUDA_RT_CALL(cudaFreeHost(prob_array));
-        if (alias_array != nullptr) CUDA_RT_CALL(cudaFreeHost(alias_array));
-        if (valid != nullptr) CUDA_RT_CALL(cudaFreeHost(valid));
+    // if (!UsingGlobal) {
+    //   if (!FLAGS_hmtable) {
+    //     printf("this\n");
+    //     if (prob_array != nullptr) CUDA_RT_CALL(cudaFree(prob_array));
+    //     if (alias_array != nullptr) CUDA_RT_CALL(cudaFree(alias_array));
+    //     if (valid != nullptr) CUDA_RT_CALL(cudaFree(valid));
+    //   } else {
+    //             printf("that\n");
+    //     if (prob_array != nullptr) CUDA_RT_CALL(cudaFreeHost(prob_array));
+    //     if (alias_array != nullptr) CUDA_RT_CALL(cudaFreeHost(alias_array));
+    //     if (valid != nullptr) CUDA_RT_CALL(cudaFreeHost(valid));
+    //   }
+    // }
+    // else{
+    //           printf("wtf????\n");
+    // }
+    // prob_array = nullptr;
+    // alias_array = nullptr;
+    // valid = nullptr;
+  }
+    double MySetSeed(uint _num_seed, uint _hop_num, uint *_hops, uint dev_num = 1,
+               uint dev_id = 0) {
+    num_seed = _num_seed;
+    std::random_device rd;
+    std::mt19937 gen(56);
+    std::uniform_int_distribution<> dis(1, ggraph.vtx_num);  // ggraph.vtx_num);
+    uint *seeds = new uint[num_seed];
+    // for (int n = num_seed / dev_num * dev_id;
+    //      n < num_seed / dev_num * (dev_id + 1); ++n)
+    if (!FLAGS_replica) {
+      for (int n = 0; n < num_seed; ++n) {
+// #ifdef check
+//         // seeds[n] = n;
+// #else
+        // seeds[n] = dev_id + n * dev_num;
+        // printf("seeds:%d\n",seeds[n]);
+     seeds[n] = dis(gen);
+// #endif  // check
+      }
+    } else {
+      
+      for (int n = 0; n < num_seed; ++n) {
+     seeds[n] = dis(gen);
       }
     }
-    prob_array = nullptr;
-    alias_array = nullptr;
-    valid = nullptr;
+    double start=wtime();
+    result.init(num_seed, _hop_num, _hops, seeds, device_id);
+    double end=wtime();
+    return end-start;
+    // printf("first ten seed:");
+    // printH(result.data,10 );
   }
 };
 
 class Walker {
  public:
   gpu_graph ggraph;
-  // sample_result result;
   uint num_seed;
   Jobs_result<JobType::RW, uint> result;
 
@@ -479,7 +512,7 @@ class Walker {
     ggraph.local_vtx_num = ggraph.vtx_num;
     ggraph.local_edge_num = ggraph.edge_num;
   }
-  void SetSeed(uint _num_seed, uint _hop_num, uint dev_num = 1,
+  void SetSeed(uint _num_seed, uint _hop_num, uint iteration_ii,uint dev_num = 1,
                uint dev_id = 0) {
     // int dev_id = omp_get_thread_num();
     // int dev_num = omp_get_num_threads();
@@ -487,22 +520,52 @@ class Walker {
     // paster(num_seed);
     std::random_device rd;
     std::mt19937 gen(56);
-    std::uniform_int_distribution<> dis(1, 10000);  // ggraph.vtx_num);
-    // uint *seeds = new uint[num_seed];
+    std::uniform_int_distribution<> dis(1,ggraph.vtx_num-1);  // ggraph.vtx_num);
+    // ulong *seeds = new ulong[num_seed];
     uint *seeds;
     CUDA_RT_CALL(MyCudaMallocManaged(&seeds, num_seed * sizeof(uint)));
     if (FLAGS_itl) {
       for (int n = 0; n < num_seed; ++n) {
-        // // seeds[n] = dis(gen);
-        seeds[n] = dev_id + n * dev_num;
+        seeds[n] = dis(gen);
+        //seeds[n] = dev_id + n * dev_num;
       }
     } else {
       for (int n = 0; n < num_seed; ++n) {
-        seeds[n] = n + dev_id * num_seed;
+        seeds[n] = dis(gen);
       }
     }
     result.init(num_seed, _hop_num, seeds, device_id);
     CUDA_RT_CALL(cudaFree(seeds));
+  }
+
+    double MySetSeed(uint _num_seed, uint _hop_num, uint iteration_ii,uint dev_num = 1,
+               uint dev_id = 0) {
+    // int dev_id = omp_get_thread_num();
+    // int dev_num = omp_get_num_threads();
+    num_seed = _num_seed;
+    // paster(num_seed);
+    std::random_device rd;
+    std::mt19937 gen(56);
+    std::uniform_int_distribution<> dis(1,ggraph.vtx_num-1);  // ggraph.vtx_num);
+    // ulong *seeds = new ulong[num_seed];
+    uint *seeds;
+    CUDA_RT_CALL(MyCudaMallocManaged(&seeds, num_seed * sizeof(uint)));
+    if (FLAGS_itl) {
+      for (int n = 0; n < num_seed; ++n) {
+        seeds[n] = dis(gen);
+        //seeds[n] = dev_id + n * dev_num;
+      }
+    } else {
+      for (int n = 0; n < num_seed; ++n) {
+        seeds[n] = dis(gen);
+      }
+    }
+    double start = wtime();
+    result.init(num_seed, _hop_num, seeds, device_id);
+    double end=wtime();
+    
+    CUDA_RT_CALL(cudaFree(seeds));
+    return end-start;
   }
   // void Start();
 };

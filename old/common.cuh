@@ -40,7 +40,7 @@ using std::stringstream;
 using std::to_string;
 using std::vector;
 
-using uint = unsigned int;
+// using uint = unsigned int;
 using ulong = unsigned long;
 
 using vtx_t = unsigned int; // vertex_num < 4B

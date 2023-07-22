@@ -20,7 +20,7 @@
 #include <stdexcept>
 
 #include "util.cuh"
-
+using uint = uint64_t;
 using namespace std;
 // using namespace intrinsics;
 DECLARE_string(input);
@@ -37,12 +37,13 @@ DECLARE_bool(v);
 template <typename T>
 void PrintResults(T *results, uint n);
 
-using uint = unsigned int;
-using vtx_t = unsigned int;   // vertex_num < 4B
-using edge_t = unsigned int;  // vertex_num < 4B
+// #undef uint
+
+using vtx_t = uint64_t;   // vertex_num < 4B
+using edge_t = uint64_t;  // vertex_num < 4B
 // using edge_t = unsigned long long int; // vertex_num > 4B
 using weight_t = float;
-using ulong = unsigned long;
+using ulong = uint64_t;
 
 class Graph {
  public:
@@ -153,12 +154,12 @@ class Graph {
     }
     alias_length = tmp;
 
-    // LOG("alias_offset: ");
+    // MYLOG("alias_offset: ");
     // for (size_t i = 0; i < 10; i++) {
     //   printf("%llu\t", alias_offset[i]);
     // }
-    // LOG("\n");
-    LOG("alias_length %llu, using %0.4f\n", alias_length,
+    // MYLOG("\n");
+    MYLOG("alias_length %llu, using %0.4f\n", alias_length,
         (alias_length / 4 + 0.0) / numEdge);
   }
   void ReadGraphGR() {
@@ -222,7 +223,8 @@ class Graph {
     assert(adjncy != NULL);
     // assert(vwgt != NULL);
     // assert(adjwgt != NULL);
-    if (sizeof(edge_t) == sizeof(uint64_t)) {
+        printf("okkkkk\n");
+    if (false) {
       read = fread(xadj + 1, sizeof(uint64_t), num_Node,
                    fpin);  // This is little-endian data
       if (read < num_Node) printf("Error: Partial read of node data\n");
@@ -232,19 +234,27 @@ class Graph {
         uint64_t rs;
         if (fread(&rs, sizeof(uint64_t), 1, fpin) != 1)
           printf("Error: Unable to read node data\n");
+//  printf("read:%ld \n",rs);
         xadj[i + 1] = rs;
       }
     }
+        printf("okkkkk\n");
     // edges are 32-bit
-    if (sizeof(vtx_t) == sizeof(uint32_t)) {
+    if (false) {
       read = fread(adjncy, sizeof(uint), num_Edge,
                    fpin);  // This is little-endian data
       if (read < num_Edge) printf("Error: Partial read of edge destinations\n");
       // fprintf(stderr, "read %lu edges\n", numEdge);
     } else {
-      assert(false &&
-             "Not implemented"); /* need to convert sizes when reading */
+      for (size_t i = 0; i < num_Edge; i++) {
+        uint32_t rs;
+        if (fread(&rs, sizeof(uint32_t), 1, fpin) != 1)
+          printf("Error: Unable to read node data\n");
+       // printf("read:%d \n",rs);
+        adjncy[i] = rs;
+      }
     }
+    printf("okkkkk\n");
     for (size_t i = 0; i < num_Node; i++) {
       outDegree[i] = xadj[i + 1] - xadj[i];
     }
@@ -268,17 +278,17 @@ class Graph {
     uint maxD = std::distance(
         outDegree, std::max_element(outDegree, outDegree + num_Node));
     // if (FLAGS_v)
-    LOG("%d has max out degree %d\n", maxD, outDegree[maxD]);
+    MYLOG("%d has max out degree %d\n", maxD, outDegree[maxD]);
     // printf("degree ");
     MaxDegree = outDegree[maxD];
     if (sizeEdgeTy && !FLAGS_randomweight && FLAGS_weight && FLAGS_bias) {
-      LOG("loading weight\n");
+      MYLOG("loading weight\n");
       if (num_Edge % 2)
         if (fseek(fpin, 4, SEEK_CUR) != 0)  // skip
           printf("Error when seeking\n");
       if (sizeof(uint) == sizeof(uint32_t)) {
         // if (FLAGS_v)
-        //   LOG("loading uint weight uint\n");
+        //   MYLOG("loading uint weight uint\n");
         // uint tmp_weight[num_Edge];
         uint *tmp_weight = new uint[num_Edge];
 
@@ -287,7 +297,7 @@ class Graph {
         readew = true;
         if (read < num_Edge) printf("Error: Partial read of edge data\n");
 
-        // LOG("convent uint weight to float\n");
+        // MYLOG("convent uint weight to float\n");
 
         // if(omp_get_thread_num())
         // printf("omp_get_max_threads() %d\n",omp_get_max_threads());
@@ -300,7 +310,7 @@ class Graph {
           // for (size_t i = 0; i < num_Edge; i++) {
           //   adjwgt[i] = static_cast<float>(outDegree[]);
           // }
-          LOG("using degree as weight\n");
+          MYLOG("using degree as weight\n");
 #pragma omp parallel for
           for (size_t i = 0; i < num_Node; i++) {
             for (size_t j = xadj[i]; j < xadj[i + 1]; j++) {

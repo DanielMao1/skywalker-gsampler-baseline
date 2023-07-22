@@ -1,6 +1,7 @@
 project(Skywalker  CXX )
 cmake_minimum_required ( VERSION 3.17 )
-
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set ( CUDA_ENABLE true )
 if ( CUDA_ENABLE )
     enable_language( CUDA )
@@ -65,7 +66,8 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(skywalker OpenMP::OpenMP_CXX)
 endif()
 set_target_properties(skywalker PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
-set_target_properties(skywalker PROPERTIES COMPILE_DEFINITIONS  LOCALITY)
+set_target_properties(skywalker PROPERTIES COMPILE_DEFINITIONS  MYLOCALITY)
+
 
 add_executable(skywalker_noloc
     ${DIR_SRCS}
@@ -93,12 +95,12 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(skywalker_node2vec OpenMP::OpenMP_CXX)
 endif()
 set_target_properties(skywalker_node2vec PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
-set_target_properties(skywalker_node2vec PROPERTIES COMPILE_DEFINITIONS  LOCALITY)
+set_target_properties(skywalker_node2vec PROPERTIES COMPILE_DEFINITIONS  MYLOCALITY)
 
-set_property(TARGET skywalker PROPERTY CUDA_ARCHITECTURES 75)
-set_property(TARGET skywalker skywalker_noloc CUDA_ARCHITECTURES 75)
-set_property(TARGET skywalker_node2vec PROPERTY CUDA_ARCHITECTURES 75)
 
+set_property(TARGET skywalker PROPERTY CUDA_ARCHITECTURES 70)
+set_property(TARGET skywalker_noloc PROPERTY CUDA_ARCHITECTURES 70)
+set_property(TARGET skywalker_node2vec PROPERTY CUDA_ARCHITECTURES 70)
 # add_executable(skywalker_degree
 #     ${DIR_SRCS}
 #     src/api/bias_degree.cu

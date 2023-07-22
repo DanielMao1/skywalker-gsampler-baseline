@@ -106,18 +106,18 @@ __global__ void ConstructAliasTableKernel(Sampler *sampler,
     __syncthreads();
   }
 }
-__global__ void PrintTable(Sampler *sampler) {
-  if (TID == 0) {
-    printf("\nprob:\n");
-    printD(sampler->prob_array, 100);
-    printf("\nalias:\n");
-    printD(sampler->alias_array, 100);
-  }
-}
+// __global__ void PrintTable(Sampler *sampler) {
+//   if (TID == 0) {
+//     printf("\nprob:\n");
+//     printD(sampler->prob_array, 100);
+//     printf("\nalias:\n");
+//     printD(sampler->alias_array, 100);
+//   }
+// }
 
 // todo offset
 float ConstructTable(Sampler &sampler, uint ngpu, uint index) {
-  LOG("%s\n", __FUNCTION__);
+  // MYLOG("%s\n", __FUNCTION__);
   int device;
   cudaDeviceProp prop;
   cudaGetDevice(&device);
@@ -143,8 +143,8 @@ float ConstructTable(Sampler &sampler, uint ngpu, uint index) {
   int block_num = n_sm * FLAGS_m;
   int gbuff_size = sampler.ggraph.MaxDegree;
 
-  LOG("alllocate GMEM buffer %d MB\n",
-      block_num * gbuff_size * MEM_PER_ELE / 1024 / 1024);
+  // MYLOG("alllocate GMEM buffer %d MB\n",
+  //     block_num * gbuff_size * MEM_PER_ELE / 1024 / 1024);
 
   Vector_pack2<uint> *vector_pack_h = new Vector_pack2<uint>[block_num];
   for (size_t i = 0; i < block_num; i++) {
@@ -170,7 +170,7 @@ float ConstructTable(Sampler &sampler, uint ngpu, uint index) {
   CUDA_RT_CALL(cudaDeviceSynchronize());
   // CUDA_RT_CALL(cudaPeekAtLastError());
   total_time = wtime() - start_time;
-  LOG("Construct table time:\t%.6f\n", total_time);
+  // MYLOG("Construct table time:\t%.6f\n", total_time);
   // paster(FLAGS_hmgraph);
   if ((FLAGS_weight || FLAGS_randomweight) && (!FLAGS_hmgraph)) {
     CUDA_RT_CALL(cudaFree(sampler.ggraph.adjwgt));

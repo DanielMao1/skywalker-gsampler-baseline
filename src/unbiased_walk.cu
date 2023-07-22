@@ -16,7 +16,8 @@ __global__ void Node2vecKernelStaticBuffer(Walker *walker) {
   gpu_graph *graph = &walker->ggraph;
   curandState state;
   curand_init(TID, 0, 0, &state);
-  __shared__ matrixBuffer<BLOCK_SIZE, 31, uint> buffer;
+  // to overcome large graph OOM issue
+  __shared__ matrixBuffer<BLOCK_SIZE, 15, uint> buffer;
   buffer.Init();
   size_t idx_i = TID;
   uint lastV = idx_i;
@@ -64,7 +65,7 @@ __global__ void UnbiasedWalkKernelStaticBuffer(Walker *walker, float *tp) {
   gpu_graph *graph = &walker->ggraph;
   curandState state;
   curand_init(TID, 0, 0, &state);
-  __shared__ matrixBuffer<BLOCK_SIZE, 31, uint> buffer;
+  __shared__ matrixBuffer<BLOCK_SIZE, 15, uint> buffer;
   buffer.Init();
   size_t idx_i = TID;
   if (idx_i < result.size) {
@@ -192,7 +193,9 @@ static __global__ void print_result(Walker *walker) {
 }
 
 float UnbiasedWalk(Walker &walker) {
-  LOG("%s\n", __FUNCTION__);
+    double start_time, total_time;
+
+  // LOG("%s\n", __FUNCTION__);
   int device;
   cudaDeviceProp prop;
   cudaGetDevice(&device);
@@ -209,15 +212,9 @@ float UnbiasedWalk(Walker &walker) {
   MyCudaMalloc(&tp_d, sizeof(float));
   CUDA_RT_CALL(cudaMemcpy(tp_d, &tp, sizeof(float), cudaMemcpyHostToDevice));
 
-  double start_time, total_time;
-  // init_kernel_ptr<<<1, 32, 0, 0>>>(sampler_ptr);
-
-  // cudaEvent_t start, stop;
-  // cudaEventCreate(&start);
-  // cudaEventCreate(&stop);
-
-  // allocate global buffer
+    start_time = wtime();
   int block_num = n_sm * FLAGS_m;
+
   CUDA_RT_CALL(cudaDeviceSynchronize());
   CUDA_RT_CALL(cudaPeekAtLastError());
 
@@ -225,7 +222,7 @@ float UnbiasedWalk(Walker &walker) {
   MyCudaMalloc(&size_d, sizeof(uint));
 
   // cudaEventRecord(start);
-  start_time = wtime();
+
 
   if (FLAGS_node2vec) {
     Node2vecKernelStaticBuffer<<<walker.num_seed / BLOCK_SIZE + 1, BLOCK_SIZE,
@@ -244,8 +241,8 @@ float UnbiasedWalk(Walker &walker) {
     for (uint current_itr = 0; current_itr < walker.result.hop_num - 1;
          current_itr++) {
       GetSize<<<1, 32, 0, 0>>>(sampler_ptr, current_itr, size_d);
-      CUDA_RT_CALL(
-          cudaMemcpy(&size_h, size_d, sizeof(uint), cudaMemcpyDeviceToHost));
+      printf("sizeof(uint):%d\n",sizeof(uint));
+      CUDA_RT_CALL(cudaMemcpy(&size_h, size_d, sizeof(uint), cudaMemcpyDeviceToHost));
       if (size_h > 0) {
         UnbiasedWalkKernelPerItr<<<size_h / BLOCK_SIZE + 1, BLOCK_SIZE, 0, 0>>>(
             sampler_ptr, current_itr);
@@ -266,11 +263,11 @@ float UnbiasedWalk(Walker &walker) {
   // float milliseconds = 0;
   // cudaEventElapsedTime(&milliseconds, start, stop);
   // printf("cuda event time %f \n",milliseconds);
-  LOG("Device %d sampling time:\t%.6f ratio:\t %.2f MSEPS sampled %u\n",
-      omp_get_thread_num(), total_time,
-      static_cast<float>(walker.result.GetSampledNumber() / total_time /
-                         1000000),
-      walker.result.GetSampledNumber());
+  // LOG("Device %d sampling time:\t%.6f ratio:\t %.2f MSEPS sampled %u\n",
+  //     omp_get_thread_num(), total_time,
+  //     static_cast<float>(walker.result.GetSampledNumber() / total_time /
+  //                        1000000),
+  //     walker.result.GetSampledNumber());
   walker.sampled_edges = walker.result.GetSampledNumber();
   if (FLAGS_printresult) print_result<<<1, 32, 0, 0>>>(sampler_ptr);
   CUDA_RT_CALL(cudaDeviceSynchronize());

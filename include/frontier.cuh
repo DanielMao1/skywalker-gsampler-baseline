@@ -11,7 +11,7 @@
 #include "vec.cuh"
 #define ADD_FRONTIER 1
 
-// #define LOCALITY 1
+// #define MYLOCALITY 1
 
 #ifdef ADD_FRONTIER
 template <typename T = uint>
@@ -82,8 +82,8 @@ struct LocalitySampleFrontier {
       CUDA_RT_CALL(
           MyCudaMalloc(&data_h[i], size_per_bucket * sizeof(sampleJob<T>)));
     }
-    LOG(" frontier overhead %d MB\n ",
-        bucket_num * size_per_bucket * sizeof(sampleJob<T>) / 1024 / 1024);
+    // LOG(" frontier overhead %d MB\n ",
+    //     bucket_num * size_per_bucket * sizeof(sampleJob<T>) / 1024 / 1024);
     CUDA_RT_CALL(MyCudaMalloc(&sizes, bucket_num * sizeof(int)));
     CUDA_RT_CALL(MyCudaMalloc(&floor, bucket_num * sizeof(int)));
     CUDA_RT_CALL(MyCudaMalloc(&focus, sizeof(int)));
@@ -214,7 +214,7 @@ struct SampleFrontier {
     CUDA_RT_CALL(MyCudaMalloc(&sizes, depth * sizeof(int)));
     CUDA_RT_CALL(MyCudaMalloc(&floor, depth * sizeof(int)));
     // printf("%s:%d %s for %d\n", __FILE__, __LINE__, __FUNCTION__, 0);
-    LOG(" frontier overhead %d MB\n ", l / 1024 / 1024);
+    MYLOG(" frontier overhead %d MB\n ", l / 1024 / 1024);
   }
   __device__ void printSize() {
     if (!TID) {

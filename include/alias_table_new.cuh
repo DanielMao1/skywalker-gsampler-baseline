@@ -332,7 +332,7 @@ struct alias_table_constructor_shmem<T, thread_block, BufferType::GMEM,
       return false;
   }
   __device__ void constructBC() {
-    __shared__ uint smallsize;
+    __shared__ unsigned int smallsize;
     // __shared__ bool using_spec;
     if (LTID == 0) smallsize = 0;
     for (size_t i = LTID; i < buffer.size; i += blockDim.x)  // BLOCK_SIZE
@@ -686,7 +686,8 @@ struct alias_table_constructor_shmem<T, thread_block, BufferType::GMEM> {
       if (act) {
         if (old + buffer.prob.Get(smallV) - 1.0 < 0) {
           // active_size2(" buffer.prob<0 ", __LINE__);
-          atomicAdd(&roll_backs, 1);
+          unsigned int a=0;
+          atomicAdd(&a, 1);
           atomicAdd(&buffer.prob.data[largeV], 1 - buffer.prob.Get(smallV));
           buffer.small.Add(smallV);
         } else {
@@ -770,7 +771,8 @@ struct alias_table_constructor_shmem<T, thread_block, BufferType::GMEM> {
         buffer.large.Add(i);
       else {
         buffer.small.Add(i);
-        atomicAdd(&smallsize, 1);
+        unsigned int a=0;
+        atomicAdd(&a, 1);
       }
     }
     MySync();

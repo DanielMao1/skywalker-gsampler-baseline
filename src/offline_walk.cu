@@ -12,7 +12,7 @@ __global__ void sample_kernel_static_buffer(Walker *walker) {
   gpu_graph *graph = &walker->ggraph;
   curandState state;
   curand_init(TID, 0, 0, &state);
-  __shared__ matrixBuffer<BLOCK_SIZE, 31, uint> buffer;
+  __shared__ matrixBuffer<BLOCK_SIZE, 15, uint> buffer;
   buffer.Init();
 
   size_t idx_i = TID;
@@ -179,7 +179,7 @@ static __global__ void print_result(Walker *walker) {
 }
 
 float OfflineWalk(Walker &walker) {
-  LOG("%s\n", __FUNCTION__);
+  // LOG("%s\n", __FUNCTION__);
   int device;
   cudaDeviceProp prop;
   cudaGetDevice(&device);
@@ -218,13 +218,13 @@ float OfflineWalk(Walker &walker) {
   // CUDA_RT_CALL(cudaPeekAtLastError());
   total_time = wtime() - start_time;
 #pragma omp barrier
-  LOG("Device %d sampling time:\t%.6f ratio:\t %.2f MSEPS\n",
-      omp_get_thread_num(), total_time,
-      static_cast<float>(walker.result.GetSampledNumber() / total_time /
-                         1000000));
+  // LOG("Device %d sampling time:\t%.6f ratio:\t %.2f MSEPS\n",
+  //     omp_get_thread_num(), total_time,
+  //     static_cast<float>(walker.result.GetSampledNumber() / total_time /
+  //                        1000000));
   walker.sampled_edges = walker.result.GetSampledNumber();
-  LOG("sampled_edges %d\n", walker.sampled_edges);
-  if (FLAGS_printresult) print_result<<<1, 32, 0, 0>>>(sampler_ptr);
+  // LOG("sampled_edges %d\n", walker.sampled_edges);
+  // if (FLAGS_printresult) print_result<<<1, 32, 0, 0>>>(sampler_ptr);
   CUDA_RT_CALL(cudaDeviceSynchronize());
   return total_time;
 }

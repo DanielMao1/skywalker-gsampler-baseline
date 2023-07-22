@@ -146,7 +146,7 @@ __device__ void printD<int>(int *ptr, size_t size) {
   }
   printf("\n");
 }
-
+using uint = uint64_t;
 template <>
 __device__ void printD<uint>(uint *ptr, size_t size) {
   printf("printDf: size %llu: ", (u64)size);

@@ -165,7 +165,7 @@ static __global__ void OnlineWalkKernel(Walker *sampler,
   }
 }
 static __device__ uint get_smid() {
-  uint ret;
+  unsigned int ret;
   asm("mov.u32 %0, %smid;" : "=r"(ret));
   return ret;
 }
@@ -244,12 +244,12 @@ void init_array(T *ptr, size_t size, T v) {
 // void Start_high_degree(Walker sampler)
 float OnlineWalkShMem(Walker &sampler) {
   // orkut max degree 932101
-  LOG("%s\n", __FUNCTION__);
+  // LOG("%s\n", __FUNCTION__);
 #ifdef skip8k
-  LOG("skipping 8k\n");
+  // LOG("skipping 8k\n");
 #endif  // skip8k
 
-  LOG("overring staic flag, static\n");
+  // LOG("overring staic flag, static\n");
   FLAGS_static = 0;
 
   int device;
@@ -271,8 +271,8 @@ float OnlineWalkShMem(Walker &sampler) {
   int block_num = n_sm * FLAGS_m;
   int gbuff_size = sampler.ggraph.MaxDegree;
   ;
-  LOG("alllocate GMEM buffer %d MB\n",
-      block_num * gbuff_size * MEM_PER_ELE / 1024 / 1024);
+  // LOG("alllocate GMEM buffer %d MB\n",
+  //     block_num * gbuff_size * MEM_PER_ELE / 1024 / 1024);
 
   Vector_pack<uint> *vector_pack_h = new Vector_pack<uint>[block_num];
   for (size_t i = 0; i < block_num; i++) {
@@ -315,13 +315,13 @@ float OnlineWalkShMem(Walker &sampler) {
   // CUDA_RT_CALL(cudaPeekAtLastError());
   total_time = wtime() - start_time;
 #pragma omp barrier
-  LOG("Device %d sampling time:\t%.2f ms ratio:\t %.1f MSEPS\n",
-      omp_get_thread_num(), total_time * 1000,
-      static_cast<float>(sampler.result.GetSampledNumber() / total_time /
-                         1000000));
+  // LOG("Device %d sampling time:\t%.2f ms ratio:\t %.1f MSEPS\n",
+  //     omp_get_thread_num(), total_time * 1000,
+  //     static_cast<float>(sampler.result.GetSampledNumber() / total_time /
+  //                        1000000));
   sampler.sampled_edges = sampler.result.GetSampledNumber();
-  LOG("sampled_edges %d\n", sampler.sampled_edges);
-  if (FLAGS_printresult) print_result<<<1, 32, 0, 0>>>(sampler_ptr);
+  // LOG("sampled_edges %d\n", sampler.sampled_edges);
+  // if (FLAGS_printresult) print_result<<<1, 32, 0, 0>>>(sampler_ptr);
   CUDA_RT_CALL(cudaDeviceSynchronize());
   return total_time;
 }

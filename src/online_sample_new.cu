@@ -187,7 +187,7 @@ static __device__ void SampleBlockCentic(Jobs_result<JobType::NS, uint> &result,
   table->Clean();
 }
 
-#ifndef LOCALITY
+#ifndef MYLOCALITY
 __global__ void sample_kernel(Sampler_new *sampler,
                               Vector_pack<uint> *vector_pack) {
   Jobs_result<JobType::NS, uint> &result = sampler->result;
@@ -461,7 +461,7 @@ float OnlineGBSampleNew(Sampler_new &sampler) {
 
   // LOG("%s\n", __FUNCTION__);
 #ifdef skip8k
-  LOG("skipping 8k\n");
+  // LOG("skipping 8k\n");
 #endif  // skip8k
 
   int device;
@@ -493,8 +493,8 @@ float OnlineGBSampleNew(Sampler_new &sampler) {
 
   int gbuff_size = sampler.ggraph.MaxDegree + 10;
 
-  LOG("alllocate GMEM buffer %d MB\n",
-      block_num * gbuff_size * MEM_PER_ELE / 1024 / 1024);
+  // LOG("alllocate GMEM buffer %d MB\n",
+      // block_num * gbuff_size * MEM_PER_ELE / 1024 / 1024);
   // paster(gbuff_size);
   Vector_pack<uint> *vector_pack_h = new Vector_pack<uint>[block_num];
   for (size_t i = 0; i < block_num; i++) {
@@ -513,7 +513,7 @@ float OnlineGBSampleNew(Sampler_new &sampler) {
   CUDA_RT_CALL(cudaDeviceSynchronize());
   start_time = wtime();
 #ifndef NDEBUG
-#ifdef LOCALITY
+#ifdef MYLOCALITY
   {
     printf("%s:%d %s \n", __FILE__, __LINE__, "sample_kernel_loc");
     sample_kernel_loc<<<1, BLOCK_SIZE, 0, 0>>>(sampler_ptr, vector_packs);
@@ -525,10 +525,10 @@ float OnlineGBSampleNew(Sampler_new &sampler) {
   }
 #endif
 #else
-#ifdef LOCALITY
-  sample_kernel_loc<<<block_num, BLOCK_SIZE, 0, 0>>>(sampler_ptr, vector_packs);
+#ifdef MYLOCALITYTY
+  // sample_kernel_loc<<<block_num, BLOCK_SIZE, 0, 0>>>(sampler_ptr, vector_packs);
 #else
-  sample_kernel<<<block_num, BLOCK_SIZE, 0, 0>>>(sampler_ptr, vector_packs);
+  // sample_kernel<<<block_num, BLOCK_SIZE, 0, 0>>>(sampler_ptr, vector_packs);
 #endif
 #endif
   CUDA_RT_CALL(cudaDeviceSynchronize());
@@ -536,10 +536,10 @@ float OnlineGBSampleNew(Sampler_new &sampler) {
   total_time = wtime() - start_time;
 #pragma omp barrier
   sampler.sampled_edges = sampler.result.GetSampledNumber(!FLAGS_peritr);
-  LOG("Device %d sampling time:\t%.2f ms ratio:\t %.1f MSEPS\n",
-      omp_get_thread_num(), total_time * 1000,
-      static_cast<float>(sampler.sampled_edges / total_time / 1000000));
-  LOG("sampled_edges %d\n", sampler.sampled_edges);
+  // LOG("Device %d sampling time:\t%.2f ms ratio:\t %.1f MSEPS\n",
+  //     omp_get_thread_num(), total_time * 1000,
+  //     static_cast<float>(sampler.sampled_edges / total_time / 1000000));
+  // LOG("sampled_edges %d\n", sampler.sampled_edges);
   if (FLAGS_printresult) print_result<<<1, 32, 0, 0>>>(sampler_ptr);
   // sampler.result.printSize();
   CUDA_RT_CALL(cudaDeviceSynchronize());

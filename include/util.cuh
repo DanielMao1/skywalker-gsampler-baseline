@@ -18,7 +18,7 @@ using namespace cooperative_groups;
 // #define u64 unsigned long long int
 using u64 = unsigned long long int;
 using ll = long long;
-using uint = unsigned int;
+using uint = uint64_t;
 
 // #define USING_HALF
 #ifdef USING_HALF
@@ -35,7 +35,7 @@ using offset_t = uint32_t;
 
 #define SASYNC_EXE
 
-// #define UNIQUE_SAMPLE 1
+#define UNIQUE_SAMPLE 1
 
 #define TID (threadIdx.x + blockIdx.x * blockDim.x)
 #define LTID (threadIdx.x)
@@ -77,7 +77,7 @@ using offset_t = uint32_t;
 #define ELE_PER_WARP 64
 #define ELE_PER_BLOCK 656
 
-#define LOG(...) \
+#define MYLOG(...) \
   if (FLAGS_v) print::myprintf(__FILE__, __LINE__, __VA_ARGS__)
 
 #define MyCudaMalloc(ptr, size) \

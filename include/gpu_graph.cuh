@@ -81,7 +81,7 @@ class gpu_graph {
         CUDA_RT_CALL(MyCudaMallocManaged(&adjwgt, edge_num * sizeof(weight_t)));
     }
     if (FLAGS_gmgraph) {
-      LOG("GMGraph\n");
+      MYLOG("GMGraph\n");
       CUDA_RT_CALL(cudaSetDevice(FLAGS_gmid));
       CUDA_RT_CALL(MyCudaMalloc(&xadj, (vtx_num + 1) * sizeof(edge_t)));
       CUDA_RT_CALL(MyCudaMalloc(&adjncy, edge_num * sizeof(vtx_t)));
@@ -94,7 +94,7 @@ class gpu_graph {
       }
     }
     if (FLAGS_hmgraph) {
-      LOG("HMGraph\n");
+      MYLOG("HMGraph\n");
       CUDA_RT_CALL(cudaMallocHost(&xadj, (vtx_num + 1) * sizeof(edge_t)));
       CUDA_RT_CALL(cudaMallocHost(&adjncy, edge_num * sizeof(vtx_t)));
       if (FLAGS_weight || FLAGS_randomweight)
@@ -116,10 +116,10 @@ class gpu_graph {
     // (graph->*(graph->getBias))
   }
   void Set_Mem_Policy(bool needWeight = false) {
-    LOG("Set_Mem_Policy\n");
-    // LOG("cudaMemAdvise %d %d\n", device_id, omp_get_thread_num());
+    MYLOG("Set_Mem_Policy\n");
+    // MYLOG("cudaMemAdvise %d %d\n", device_id, omp_get_thread_num());
     if (FLAGS_ab) {
-      LOG("Policy ab\n");
+      MYLOG("Policy ab\n");
       CUDA_RT_CALL(cudaMemAdvise(xadj, (vtx_num + 1) * sizeof(edge_t),
                                  cudaMemAdviseSetAccessedBy, device_id));
       CUDA_RT_CALL(cudaMemAdvise(adjncy, edge_num * sizeof(vtx_t),
@@ -130,11 +130,11 @@ class gpu_graph {
     }
 
     if (FLAGS_pf) {
-      LOG("Policy pf\n");
+      MYLOG("Policy pf\n");
       if ((edge_num + 1) * sizeof(edge_t) / 1024 / 1024 / 1024 >
           (needWeight ? 5 : 10)) {
         FLAGS_pfr = 0.5;
-        LOG(" Overridding PF ratio to %f\n", (double)FLAGS_pfr);
+        MYLOG(" Overridding PF ratio to %f\n", (double)FLAGS_pfr);
       }
       CUDA_RT_CALL(cudaMemPrefetchAsync(
           xadj, (size_t)((vtx_num + 1) * sizeof(edge_t) * FLAGS_pfr), device_id,
@@ -149,7 +149,7 @@ class gpu_graph {
             device_id, 0));
 
     } else {
-      LOG("UM from host\n");
+      MYLOG("UM from host\n");
       CUDA_RT_CALL(cudaMemPrefetchAsync(xadj, (vtx_num + 1) * sizeof(edge_t),
                                         cudaCpuDeviceId, 0));
       CUDA_RT_CALL(cudaMemPrefetchAsync(adjncy, edge_num * sizeof(vtx_t),
@@ -163,7 +163,7 @@ class gpu_graph {
   }
   __host__ void Free() {
     if (!FLAGS_hmgraph) {
-      LOG("free\n");
+      MYLOG("free\n");
       if (xadj != nullptr) CUDA_RT_CALL(cudaFree(xadj));
       if (adjncy != nullptr) CUDA_RT_CALL(cudaFree(adjncy));
       if (adjwgt != nullptr && (FLAGS_weight || FLAGS_randomweight) && FLAGS_ol)

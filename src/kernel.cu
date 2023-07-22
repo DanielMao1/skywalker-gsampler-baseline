@@ -41,7 +41,8 @@ __global__ void init_kernel_ptr(Walker *sampler, bool biasInit) {
 __device__ bool AddTillSize(uint *size,
                             size_t target_size)  // T *array,       T t,
 {
-  uint old = atomicAdd(size, 1);
+  unsigned int *a=0;
+  uint old = atomicAdd(a, 1);
   if (old < target_size) {
     return true;
   }
