@@ -223,7 +223,6 @@ class Graph {
     assert(adjncy != NULL);
     // assert(vwgt != NULL);
     // assert(adjwgt != NULL);
-        printf("okkkkk\n");
     if (false) {
       read = fread(xadj + 1, sizeof(uint64_t), num_Node,
                    fpin);  // This is little-endian data
@@ -238,7 +237,6 @@ class Graph {
         xadj[i + 1] = rs;
       }
     }
-        printf("okkkkk\n");
     // edges are 32-bit
     if (false) {
       read = fread(adjncy, sizeof(uint), num_Edge,
@@ -254,7 +252,6 @@ class Graph {
         adjncy[i] = rs;
       }
     }
-    printf("okkkkk\n");
     for (size_t i = 0; i < num_Node; i++) {
       outDegree[i] = xadj[i + 1] - xadj[i];
     }

@@ -322,7 +322,9 @@ int main(int argc, char *argv[]) {
 
           // printf("there!\n");
         } else {
-          for(int e=0;e<5;e++){
+          double total_epoch_sample_time = 0;
+          int total_epoch=6; 
+          for(int e=0;e<total_epoch;e++){
           double total_sample_time = 0;
           // samplers[dev_id] = Sampler(ggraphs[dev_id], dev_id);
           // samplers[dev_id].SetSeed(local_sample_size, Depth + 1, hops,
@@ -361,8 +363,12 @@ int main(int argc, char *argv[]) {
             //  mysampler.Free();
           }
           // double end_time = wtime();
-          printf("epoch time:%.3f\n", total_sample_time * 1000);
+          printf("epoch %d time:%.3f\n", e,total_sample_time);
+          if (e>0){
+          total_epoch_sample_time += total_sample_time;
+          }
         }
+        printf("avg epoch time:%.2f\n", total_epoch_sample_time/(total_epoch-1));
         }
       }
 
@@ -488,9 +494,9 @@ int main(int argc, char *argv[]) {
       }
     printf("\n");
     for (size_t i = 0; i < FLAGS_ngpu; i++) {
-      printf("%0.6f\t", times[i]);
+      // printf("%0.6f\t", times[i]);
     }
-    printf("\n");
+    // printf("\n");
     // for (size_t i = 0; i < FLAGS_ngpu; i++) {
     //   printf("%0.2f\t", tp[i]);
     // }
