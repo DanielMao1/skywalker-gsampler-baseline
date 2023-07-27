@@ -292,7 +292,7 @@ int main(int argc, char *argv[]) {
 #pragma omp barrier
           // double start_time = wtime();
           double total_epoch_sample_time = 0;
-          int total_epoch=6; 
+          int total_epoch=2; 
           for(int e=0;e<total_epoch;e++){
           double sample_time = 0;
           for (uint ii = 0; ii < number_of_batch; ii++) {
