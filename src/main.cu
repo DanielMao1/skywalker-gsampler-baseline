@@ -291,7 +291,10 @@ int main(int argc, char *argv[]) {
         if (FLAGS_rw) {
 #pragma omp barrier
           // double start_time = wtime();
-          double total_walk_time = 0;
+          double total_epoch_sample_time = 0;
+          int total_epoch=6; 
+          for(int e=0;e<total_epoch;e++){
+          double sample_time = 0;
           for (uint ii = 0; ii < number_of_batch; ii++) {
             // double walkernew_start_time = wtime();
             Walker walker(samplers[dev_id]);
@@ -300,14 +303,14 @@ int main(int argc, char *argv[]) {
             //        (walkernew_end_time - walkernew_start_time) * 1000);
             // double set_seeds_start_time = wtime();
                                     // double setseed_start_time = wtime();
-            total_walk_time +=walker.MySetSeed(local_sample_size, Depth + 1, 0, dev_num, dev_id);
+            sample_time +=walker.MySetSeed(local_sample_size, Depth + 1, 0, dev_num, dev_id);
             //  setseed_end_time - setseed_start_time;
             // double set_seeds_end_time = wtime();
             // printf("set seeds time:%.3f\n",
             //        (set_seeds_end_time - set_seeds_start_time) * 1000);
             // printf("iteration:%d\n",ii);
 
-            total_walk_time += UnbiasedWalk(walker);
+            sample_time += UnbiasedWalk(walker);
             // printf("walk time:%.3f\n",
             //        (walk_end_time - walk_start_time) * 1000);
             samplers[dev_id].sampled_edges = walker.sampled_edges;
@@ -318,7 +321,14 @@ int main(int argc, char *argv[]) {
             //        (free_end_time - free_start_time) * 1000);
           }
           // double end_time = wtime();
-          printf("walk time:%.3f\n", total_walk_time * 1000);
+          printf("walk time:%.3f\n", sample_time);
+                    if (e>0){
+          total_epoch_sample_time += sample_time;
+          }
+          
+             }
+                  printf("avg epoch time:%.2f\n", total_epoch_sample_time/(total_epoch-1));
+     
 
           // printf("there!\n");
         } else {
@@ -492,7 +502,7 @@ int main(int argc, char *argv[]) {
       for (size_t i = 0; i < FLAGS_ngpu; i++) {
         printf("%0.6f\t", table_times[i]);
       }
-    printf("\n");
+    // printf("\n");
     for (size_t i = 0; i < FLAGS_ngpu; i++) {
       // printf("%0.6f\t", times[i]);
     }
